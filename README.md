@@ -31,8 +31,6 @@ This solution demonstrates asynchronous communication between services using Kaf
 
 # 🏗 Architecture Diagram
 
-```mermaid
-
 flowchart LR
     Client -->|HTTP POST| OrderAPI
     OrderAPI -->|Publish Event| Kafka[(Kafka Broker)]
