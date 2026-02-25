@@ -30,18 +30,14 @@ This solution demonstrates asynchronous communication between services using Kaf
 ---
 
 # 🏗 Architecture Diagram
-
-```mermaid
-
 flowchart LR
     Client -->|HTTP POST| OrderAPI
     OrderAPI -->|Publish Event| Kafka[(Kafka Broker)]
     Kafka -->|Consume Event| OrderConsumer
-	
+---
 
-📂 Solution Structure
-	
-	DotnetKafkaEventDriven-Demo
+# 📂 Solution Structure
+DotnetKafkaEventDriven-Demo
 │
 ├── docker-compose.yml
 │
@@ -53,48 +49,37 @@ flowchart LR
 │
 └── Order.Consumer
     └── Program.cs
-	
-🐳 Infrastructure Setup
-Start Kafka
-	docker-compose down -v
-	docker-compose up -d
+---
 
+# 🐳 Infrastructure Setup
+
+Start Kafka:docker-compose down -v
+docker-compose up -d
 Verify:
-	docker ps
-	
+docker ps
+Kafka exposed on:localhost:29092
+---
 
-Kafka exposed on:
-	localhost:29092
+# 🚀 Running the Application
 
-🚀 Running the Application
-
-1️⃣ Start Order API:
-		cd Order.API
-		dotnet run
-		
-Swagger URL:
-	http://localhost:5122/swagger
-
-2️⃣ Start Consumer
-	cd Order.Consumer
-	dotnet run
-Expected:
+1️⃣ Start Order API:cd Order.API
+dotnet runSwagger URL:http://localhost:5122/swagger
+2️⃣ Start Consumer:cd Order.Consumer
+dotnet runExpected:
 Waiting for messages...
 Order received: { ... }
+---
 
-
-📤 Publishing an Order
+# 📤 Publishing an Order
 
 POST /api/orders
 
-Example:
-
-{
+Example:{
   "orderId": 101,
   "productName": "Laptop",
   "quantity": 2
 }
-
 Response:
-
 Order event published successfully
+
+
