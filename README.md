@@ -16,11 +16,11 @@ An enterprise-grade Event-Driven Architecture demo built using:
 
 ---
 
-# 📌 Architecture Overview
+## 📌 Architecture Overview
 
 This solution demonstrates asynchronous communication between services using Kafka as an event bus.
 
-## Flow
+### Flow
 
 1. Order API receives request
 2. Publishes `OrderCreated` event to Kafka
@@ -29,14 +29,14 @@ This solution demonstrates asynchronous communication between services using Kaf
 
 ---
 
-# 🏗 Architecture Diagram
+## 🏗 Architecture Diagram
 flowchart LR
     Client -->|HTTP POST| OrderAPI
     OrderAPI -->|Publish Event| Kafka[(Kafka Broker)]
     Kafka -->|Consume Event| OrderConsumer
 ---
 
-# 📂 Solution Structure
+## 📂 Solution Structure
 DotnetKafkaEventDriven-Demo
 │
 ├── docker-compose.yml
@@ -51,35 +51,36 @@ DotnetKafkaEventDriven-Demo
     └── Program.cs
 ---
 
-# 🐳 Infrastructure Setup
+## 🐳 Infrastructure Setup
 
-Start Kafka:docker-compose down -v
+**Start Kafka:**docker-compose down -v
 docker-compose up -d
-Verify:
+**Verify:**
 docker ps
-Kafka exposed on:localhost:29092
+**Kafka exposed on:**localhost:29092
 ---
 
-# 🚀 Running the Application
+## 🚀 Running the Application
 
-1️⃣ Start Order API:cd Order.API
-dotnet runSwagger URL:http://localhost:5122/swagger
-2️⃣ Start Consumer:cd Order.Consumer
-dotnet runExpected:
-Waiting for messages...
+**1️⃣ Start Order API:**cd Order.API
+dotnet run
+**Swagger URL:**http://localhost:5122/swagger
+**2️⃣ Start Consumer:**cd Order.Consumer
+dotnet run
+**Expected output:**Waiting for messages...
 Order received: { ... }
 ---
 
-# 📤 Publishing an Order
+## 📤 Publishing an Order
 
-POST /api/orders
+**POST** `/api/orders`
 
-Example:{
+**Example:**{
   "orderId": 101,
   "productName": "Laptop",
   "quantity": 2
 }
-Response:
+**Response:**
 Order event published successfully
 
 
