@@ -79,7 +79,7 @@ cd Order.Consumer dotnet run
 **POST** `/api/orders`
 
 **Example:**
-{ "orderId": 101, "productName": "Laptop", "quantity": 2 }
+{ "orderId": ORD-1001, "productName": "Laptop", "price": 75000 }
 
 
 **Response:**
