@@ -70,7 +70,7 @@ cd Order.Consumer dotnet run
 
 
 **Expected output:**
-[2024-06-01 12:00:00] [Information] Consumed event: OrderCreated - OrderId: 12345, Product: Widget, Quantity: 10    
+[2026-03-02 12:00:00] [Information] Consumed event: OrderCreated - OrderId: 101, Product: Laptop, Quantity: 2    
 
 ---
 
