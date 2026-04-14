@@ -116,7 +116,7 @@ cd Order.Consumer dotnet run
 ```json
 {
   "Kafka": {
-    "BootstrapServers": "localhost:9092",
+    "BootstrapServers": "localhost:29092",
     "Topic": "orders"
   }
 }
