@@ -1,20 +1,118 @@
-﻿services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-    ports:
-      - "22181:2181"
+name: kafka-event-driven-demo
 
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
+services:
+
+  # ── KRaft Controller ───────────────────────────────────────────────────────────
+  # Manages the cluster metadata log (replaces Zookeeper).
+  # Does not handle producer/consumer traffic.
+  kafka-controller:
+    image: confluentinc/cp-kafka:7.7.1
+    hostname: kafka-controller
+    container_name: kafka-controller
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://kafka-controller:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-controller:9093
+      # Fixed cluster ID — must match across all nodes in the same cluster.
+      # Generate a new one with: kafka-storage random-uuid
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+  # ── Kafka Broker ───────────────────────────────────────────────────────────────
+  # Handles all producer and consumer traffic.
+  # Two listeners:
+  #   PLAINTEXT       — container-to-container (kafka-broker:9092)
+  #   PLAINTEXT_HOST  — host machine clients   (localhost:29092)
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.7.1
+    hostname: kafka-broker
+    container_name: kafka-broker
     depends_on:
-      - zookeeper
+      - kafka-controller
     ports:
       - "29092:29092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:29092
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_LISTENERS: PLAINTEXT://kafka-broker:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-controller:9093
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      # Replication factor of 1 is correct for a single-broker dev setup.
+      # Increase for multi-broker environments.
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Speed up consumer group rebalancing on startup in dev.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # ── Topic Initializer ──────────────────────────────────────────────────────────
+  # Creates all required topics once the broker is healthy.
+  # Explicit creation ensures correct partition counts and avoids
+  # accidental auto-creation with wrong settings.
+  kafka-init:
+    image: confluentinc/cp-kafka:7.7.1
+    container_name: kafka-init
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+    restart: "on-failure"
+    command:
+      - bash
+      - -c
+      - |
+        echo 'Creating topics...'
+
+        kafka-topics --bootstrap-server kafka-broker:9092 \
+          --create --if-not-exists \
+          --topic order-events \
+          --partitions 3 \
+          --replication-factor 1
+
+        kafka-topics --bootstrap-server kafka-broker:9092 \
+          --create --if-not-exists \
+          --topic order-events.retry-1 \
+          --partitions 3 \
+          --replication-factor 1
+
+        kafka-topics --bootstrap-server kafka-broker:9092 \
+          --create --if-not-exists \
+          --topic order-events.retry-5 \
+          --partitions 3 \
+          --replication-factor 1
+
+        kafka-topics --bootstrap-server kafka-broker:9092 \
+          --create --if-not-exists \
+          --topic order-events.dlq \
+          --partitions 1 \
+          --replication-factor 1
+
+        echo 'Topics ready:'
+        kafka-topics --bootstrap-server kafka-broker:9092 --list
+
+  # ── Kafka UI ───────────────────────────────────────────────────────────────────
+  # Web UI for browsing topics, partitions, consumer groups, and messages.
+  # Access at: http://localhost:8080
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      kafka-broker:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-dev
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker:9092
+      DYNAMIC_CONFIG_ENABLED: "true"

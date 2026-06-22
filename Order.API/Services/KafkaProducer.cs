@@ -1,32 +1,38 @@
-﻿using Confluent.Kafka;
-using System.Text.Json;
-using Order.API.Models;
+using Confluent.Kafka;
+using Order.API.Security;
 
 namespace Order.API.Services;
 
-public class KafkaProducer
+public class KafkaProducer : IDisposable
 {
-    private readonly IProducer<Null, string> _producer;
-    private readonly string _topic;
+    private readonly IProducer<string, string> _producer;
 
     public KafkaProducer(IConfiguration configuration)
     {
         var config = new ProducerConfig
         {
-            BootstrapServers = configuration["Kafka:BootstrapServers"]
+            BootstrapServers  = configuration["Kafka:BootstrapServers"],
+            Acks              = Acks.All,
+            EnableIdempotence = true,
+            MessageSendMaxRetries = int.MaxValue,
+
+            CompressionType = CompressionType.Zstd,
+            LingerMs        = 5,
+            BatchSize       = 64 * 1024
         };
 
-        _producer = new ProducerBuilder<Null, string>(config).Build();
-        _topic = configuration["Kafka:Topic"]!;
+        config.ApplySecurity(configuration);
+
+        _producer = new ProducerBuilder<string, string>(config).Build();
     }
 
-    public async Task ProduceAsync(OrderCreatedEvent orderEvent)
+    public async Task PublishAsync(string topic, string payload)
     {
-        var message = JsonSerializer.Serialize(orderEvent);
-
-        await _producer.ProduceAsync(_topic, new Message<Null, string>
+        await _producer.ProduceAsync(topic, new Message<string, string>
         {
-            Value = message
+            Value = payload
         });
     }
+
+    public void Dispose() => _producer.Dispose();
 }
