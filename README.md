@@ -267,8 +267,4 @@ Database migrations are applied automatically on startup for both services.
 | xUnit + Testcontainers | Integration testing with real Kafka and SQL Server |
 | Swagger / OpenAPI | API documentation and manual testing |
 
----
 
-## License
-
-MIT
